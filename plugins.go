@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/crosbymichael/log"
-	"github.com/crosbymichael/skydock/docker"
-	"github.com/crosbymichael/skydock/utils"
+	//"github.com/crosbymichael/log"
+	"github.com/artemkaint/docker-powerdns-dock/docker"
+	"github.com/artemkaint/docker-powerdns-dock/utils"
 	"github.com/robertkrimen/otto"
 	"github.com/skynetservices/skydns1/msg"
 	"io/ioutil"
@@ -65,7 +65,7 @@ func (r *pluginRuntime) createService(container *docker.Container) (*msg.Service
 
 func newRuntime(file string) (*pluginRuntime, error) {
 	runtime := otto.New()
-	log.Logf(log.INFO, "loading plugins from %s", file)
+	//log.Logf(log.INFO, "loading plugins from %s", file)
 
 	content, err := ioutil.ReadFile(file)
 	if err != nil {

@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/crosbymichael/log"
-	"github.com/crosbymichael/skydock/utils"
+	//"github.com/crosbymichael/log"
+	"github.com/artemkaint/docker-powerdns-dock/utils"
 	"io"
 	"net"
 	"net/http"
@@ -153,20 +153,20 @@ func (d *dockerClient) GetEvents() chan *Event {
 
 		c, err := d.newConn()
 		if err != nil {
-			log.Logf(log.FATAL, "cannot connect to docker: %s", err)
+			//log.Logf(log.FATAL, "cannot connect to docker: %s", err)
 			return
 		}
 		defer c.Close()
 
 		req, err := http.NewRequest("GET", "/events", nil)
 		if err != nil {
-			log.Logf(log.ERROR, "bad request for events: %s", err)
+			//log.Logf(log.ERROR, "bad request for events: %s", err)
 			return
 		}
 
 		resp, err := c.Do(req)
 		if err != nil {
-			log.Logf(log.FATAL, "cannot connect to events endpoint: %s", err)
+			//log.Logf(log.FATAL, "cannot connect to events endpoint: %s", err)
 			return
 		}
 		defer resp.Body.Close()
@@ -176,8 +176,8 @@ func (d *dockerClient) GetEvents() chan *Event {
 		signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT)
 		go func() {
 			for sig := range sigChan {
-				log.Logf(log.INFO, "received signal '%v', exiting", sig)
-
+				//log.Logf(log.INFO, "received signal '%v', exiting", sig)
+				fmt.Fprintf(os.Stderr, "%s\n", sig)
 				c.Close()
 				close(eventChan)
 				os.Exit(0)
@@ -191,12 +191,12 @@ func (d *dockerClient) GetEvents() chan *Event {
 				if err == io.EOF {
 					break
 				}
-				log.Logf(log.ERROR, "cannot decode json: %s", err)
+				//log.Logf(log.ERROR, "cannot decode json: %s", err)
 				continue
 			}
 			eventChan <- event
 		}
-		log.Logf(log.DEBUG, "closing event channel")
+		//log.Logf(log.DEBUG, "closing event channel")
 	}()
 	return eventChan
 }
