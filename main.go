@@ -63,7 +63,7 @@ func validateSettings() {
 	}
 
 	if (skydnsUrl == "") && (skydnsContainerName == "") {
-		skydnsUrl = "http://" + os.Getenv("SKYDNS_PORT_8080_TCP_ADDR") + ":8080"
+		skydnsUrl = "http://" + os.Getenv("SKYDNS_PORT_8080_TCP_ADDR") + ":8081"
 	}
 
 	if domain == "" {
@@ -267,12 +267,12 @@ func main() {
 			fatal(err)
 		}
 
-		skydnsUrl = "http://" + container.NetworkSettings.IpAddress + ":8080"
+		skydnsUrl = "http://" + container.NetworkSettings.IpAddress + ":8081"
 	}
 
 	//log.Logf(log.INFO, "skydns URL: %s", skydnsUrl)
 
-	if skydns, err = client.NewClient(skydnsUrl, secret, domain, "172.17.42.1:53"); err != nil {
+	if skydns, err = client.NewClient(skydnsUrl, secret, domain, "172.17.0.8:53"); err != nil {
 		//log.Logf(log.FATAL, "error connecting to skydns: %s", err)
 		fatal(err)
 	}

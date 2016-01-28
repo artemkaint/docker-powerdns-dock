@@ -2,10 +2,11 @@ reset && go install . ./...
 go get -u github.com/robertkrimen/otto
 go get -u github.com/skynetservices/skydns1/client
 go get -u github.com/skynetservices/skydns1/msg
+
 /go/bin/docker-powerdns-dock -ttl 30 -environment dev -s /docker.sock -domain docker -name skydns
 
 
 cp -a /usr/local/go /usr/local/gosdk
 
 
-docker run --rm -ti -v /var/run/docker.sock:/docker.sock -v /home/artemkaint/dev/docker-powerdns-dock/sdk/custom:/go  /home/artemkaint/dev/docker-powerdns-dock:/go/src/github.com/artemkaint/docker-powerdns-dock -v /home/artemkaint/dev/docker-powerdns-dock/sdk:/usr/local/gosdk --name skydock1 -w /go/src/github.com/artemkaint/docker-powerdns-dock golang bash
+docker run --rm -ti -v /var/run/docker.sock:/docker.sock -v /home/artemkaint/dev/docker-powerdns-dock/.sdk/custom:/go -v /home/artemkaint/dev/docker-powerdns-dock:/go/src/github.com/artemkaint/docker-powerdns-dock -v /home/artemkaint/dev/docker-powerdns-dock/.sdk:/usr/local/gosdk --name skydock1 -w /go/src/github.com/artemkaint/docker-powerdns-dock golang bash

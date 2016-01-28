@@ -59,6 +59,7 @@ func (c *Client) Add(uuid string, s *msg.Service) error {
 	if err := json.NewEncoder(b).Encode(s); err != nil {
 		return err
 	}
+	fmt.Printf("ddddddddddddd %+v\n", c)
 	req, err := c.newRequest("PUT", c.joinUrl(uuid), b)
 	if err != nil {
 		return err
