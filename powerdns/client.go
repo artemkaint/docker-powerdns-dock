@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"os"
 )
 
 var (
@@ -35,9 +36,15 @@ type (
 	NameCount map[string]int
 )
 
+func logger(msg string, buffer *bytes.Buffer) error {
+	fmt.Fprintf(os.Stderr, "Log: Method:%s \n %s \n", msg, buffer)
+	return nil
+}
+
 // NewClient creates a new skydns client with the specificed host address and
 // DNS port.
 func NewClient(base, secret, domain, basedns string) (*Client, error) {
+    logger("newClient" + base + secret + domain + basedns, nil)
 	if base == "" {
 		return nil, ErrNoHttpAddress
 	}
@@ -54,12 +61,38 @@ func NewClient(base, secret, domain, basedns string) (*Client, error) {
 	}, nil
 }
 
+func (c *Client) GetServers() error {
+    b := bytes.NewBuffer(nil)
+    req, err := c.newRequest("GET", "/servers", b)
+    fmt.Fprintf(os.Stderr, "Log: ERROR :%s \n", err.Error())
+    if err != nil {
+        return err
+    }
+    resp, err := c.h.Do(req)
+    if err != nil {
+        return err
+    }
+    if resp.Body != nil {
+        buf := new(bytes.Buffer)
+        buf.ReadFrom(resp.Body)
+        logger(buf.String(), nil)
+        defer resp.Body.Close()
+    }
+    switch resp.StatusCode {
+    	case http.StatusOK:
+    		return nil
+    	default:
+    		return ErrInvalidResponse
+    }
+}
+
 func (c *Client) Add(uuid string, s *msg.Service) error {
 	b := bytes.NewBuffer(nil)
 	if err := json.NewEncoder(b).Encode(s); err != nil {
 		return err
 	}
-	fmt.Printf("ddddddddddddd %+v\n", c)
+	logger("Add" + c.joinUrl(uuid), b)
+	c.GetServers()
 	req, err := c.newRequest("PUT", c.joinUrl(uuid), b)
 	if err != nil {
 		return err
@@ -90,6 +123,7 @@ func (c *Client) Add(uuid string, s *msg.Service) error {
 }
 
 func (c *Client) Delete(uuid string) error {
+	logger("Delete", nil)
 	req, err := c.newRequest("DELETE", c.joinUrl(uuid), nil)
 	if err != nil {
 		return err
@@ -105,6 +139,7 @@ func (c *Client) Delete(uuid string) error {
 }
 
 func (c *Client) Get(uuid string) (*msg.Service, error) {
+	logger("GET", nil)
 	req, err := c.newRequest("GET", c.joinUrl(uuid), nil)
 	if err != nil {
 		return nil, err
@@ -134,6 +169,8 @@ func (c *Client) Get(uuid string) (*msg.Service, error) {
 
 func (c *Client) Update(uuid string, ttl uint32) error {
 	b := bytes.NewBuffer([]byte(fmt.Sprintf(`{"TTL":%d}`, ttl)))
+
+	logger("Update", b)
 	req, err := c.newRequest("PATCH", c.joinUrl(uuid), b)
 	if err != nil {
 		return err
@@ -149,6 +186,7 @@ func (c *Client) Update(uuid string, ttl uint32) error {
 }
 
 func (c *Client) GetAllServices() ([]*msg.Service, error) {
+	logger("GetAll", nil)
 	req, err := c.newRequest("GET", c.joinUrl(""), nil)
 	if err != nil {
 		return nil, err
@@ -196,6 +234,7 @@ func (c *Client) GetAllServicesDNS() ([]*msg.Service, error) {
 }
 
 func (c *Client) GetRegions() (NameCount, error) {
+	logger("Get Regions" + fmt.Sprintf("%s/skydns/regions/", c.base), nil)
 	req, err := c.newRequest("GET", fmt.Sprintf("%s/skydns/regions/", c.base), nil)
 	if err != nil {
 		return nil, err
@@ -268,6 +307,7 @@ func (c *Client) joinUrl(uuid string) string {
 
 func (c *Client) newRequest(method, url string, body io.Reader) (*http.Request, error) {
 	req, err := http.NewRequest(method, url, body)
+	req.Header.Add("X-API-Key", "SOMEKEY")
 	if c.secret != "" {
 		req.Header.Add("Authorization", c.secret)
 	}

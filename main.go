@@ -12,7 +12,7 @@ import (
 	"github.com/artemkaint/docker-powerdns-dock/docker"
 	"github.com/artemkaint/docker-powerdns-dock/utils"
 	//influxdb "github.com/influxdb/influxdb/client"
-	"github.com/skynetservices/skydns1/client"
+	"github.com/artemkaint/docker-powerdns-dock/powerdns"
 	"github.com/skynetservices/skydns1/msg"
 	"os"
 	"sync"
