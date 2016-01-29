@@ -127,11 +127,92 @@ func (c *Client) GetServerConfig(uuid string) error {
     return nil
 }
 
+// GET /servers/:server_id/zones
+func (c *Client) GetZones() (*[]response.ZoneCollection, error) {
+    b := bytes.NewBuffer(nil)
+    req, err := c.newRequest("GET", c.joinUrl(fmt.Sprintf("servers/%s/zones", "localhost")), b)
+    if err != nil {
+        return nil, err
+    }
+    resp, err := c.h.Do(req)
+    if err != nil {
+        return nil, err
+    }
+    if resp.Body != nil {
+        defer resp.Body.Close()
+    }
+    switch resp.StatusCode {
+    	case http.StatusOK:
+    		break
+    	default:
+    		return nil, ErrInvalidResponse
+    }
+    var s *[]response.ZoneCollection
+    if err := json.NewDecoder(resp.Body).Decode(&s); err != nil {
+        return nil, err
+    }
+    return s, nil
+}
+
+// POST /servers/:server_id/zones
+func (c *Client) AddZone() (*response.ZoneCollection, error) {
+    jsonZone, err := json.Marshal(response.ZoneCollection{
+        Name: "example.org",
+        Kind: "Native",
+        Masters: []string{},
+        Nameservers: []string{
+            "ns1.example.org",
+            "ns2.example.org",
+        },
+    })
+    if err != nil {
+        fmt.Fprintf(os.Stderr, "Log: ERROR0 :%s \n", err.Error())
+        return nil, err
+    }
+    b := bytes.NewBuffer([]byte(jsonZone))
+    req, err := c.newRequest("POST", c.joinUrl(fmt.Sprintf("servers/%s/zones", "localhost")), b)
+    if err != nil {
+        return nil, err
+    }
+    resp, err := c.h.Do(req)
+    if err != nil {
+        return nil, err
+    }
+    if resp.Body != nil {
+        defer resp.Body.Close()
+    }
+    switch resp.StatusCode {
+    	case http.StatusOK:
+    		break
+    	case http.StatusBadRequest:
+    		return nil, ErrInvalidResponse
+        case 422:
+            var s *response.Error
+            if err := json.NewDecoder(resp.Body).Decode(&s); err != nil {
+                return nil, errors.New("Resource already exists")
+            }
+            var errorText string
+            if errorText = "Resource already exists"; s.Error != "" {
+                errorText = s.Error
+            }
+    		return nil, errors.New(errorText)
+    	default:
+    		return nil, ErrInvalidResponse
+    }
+    var s *response.ZoneCollection
+    if err := json.NewDecoder(resp.Body).Decode(&s); err != nil {
+        return nil, err
+    }
+    return s, nil
+}
+
 func (c *Client) Add(uuid string, s *msg.Service) error {
 	b := bytes.NewBuffer(nil)
 	if err := json.NewEncoder(b).Encode(s); err != nil {
 		return err
 	}
+	c.AddZone()
+	os.Exit(1)
 	logger("Add" + c.joinUrl(uuid), b)
 	req, err := c.newRequest("PUT", c.joinUrl(uuid), b)
 	if err != nil {
