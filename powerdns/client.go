@@ -157,7 +157,7 @@ func (c *Client) GetZones() (*[]response.ZoneCollection, error) {
 // POST /servers/:server_id/zones
 func (c *Client) AddZone() (*response.ZoneCollection, error) {
     jsonZone, err := json.Marshal(response.ZoneCollection{
-        Name: "example.org",
+        Name: "example.6g666",
         Kind: "Native",
         Masters: []string{},
         Nameservers: []string{
@@ -166,7 +166,6 @@ func (c *Client) AddZone() (*response.ZoneCollection, error) {
         },
     })
     if err != nil {
-        fmt.Fprintf(os.Stderr, "Log: ERROR0 :%s \n", err.Error())
         return nil, err
     }
     b := bytes.NewBuffer([]byte(jsonZone))
@@ -183,6 +182,8 @@ func (c *Client) AddZone() (*response.ZoneCollection, error) {
     }
     switch resp.StatusCode {
     	case http.StatusOK:
+    		break
+        case http.StatusCreated:
     		break
     	case http.StatusBadRequest:
     		return nil, ErrInvalidResponse
@@ -211,8 +212,14 @@ func (c *Client) Add(uuid string, s *msg.Service) error {
 	if err := json.NewEncoder(b).Encode(s); err != nil {
 		return err
 	}
-	c.AddZone()
-	os.Exit(1)
+	res, err := c.AddZone()
+    if err != nil {
+        fmt.Fprintf(os.Stderr, "Log: ERROR: %s \n", err.Error())
+    }
+    if res != nil {
+        fmt.Fprintf(os.Stderr, "Log: RESULT: %s \n", res)
+    }
+	os.Exit(0)
 	logger("Add" + c.joinUrl(uuid), b)
 	req, err := c.newRequest("PUT", c.joinUrl(uuid), b)
 	if err != nil {

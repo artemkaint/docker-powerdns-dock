@@ -14,8 +14,8 @@ type ZoneCollection struct {
     Type                string                  `json:"type"`
     Url                 string                  `json:"url"`
     Kind                string                  `json:"kind"`
-    Serial              string                  `json:"serial"`
-    Notified_serial     string                  `json:"notified_serial"`
+    Serial              int                     `json:"serial"`
+    Notified_serial     int                     `json:"notified_serial"`
     Masters             []string                `json:"masters"`
     Dnssec              bool                    `json:"dnssec"`
     Nsec3param          string                  `json:"nsec3param"`
