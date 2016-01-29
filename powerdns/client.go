@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/miekg/dns"
 	"github.com/skynetservices/skydns1/msg"
+	"github.com/artemkaint/docker-powerdns-dock/powerdns/response"
 	"io"
 	"net/http"
 	"net/url"
@@ -44,7 +45,6 @@ func logger(msg string, buffer *bytes.Buffer) error {
 // NewClient creates a new skydns client with the specificed host address and
 // DNS port.
 func NewClient(base, secret, domain, basedns string) (*Client, error) {
-    logger("newClient" + base + secret + domain + basedns, nil)
 	if base == "" {
 		return nil, ErrNoHttpAddress
 	}
@@ -61,29 +61,30 @@ func NewClient(base, secret, domain, basedns string) (*Client, error) {
 	}, nil
 }
 
-func (c *Client) GetServers() error {
+func (c *Client) GetServers() (*[]response.ServerResource, error) {
     b := bytes.NewBuffer(nil)
-    req, err := c.newRequest("GET", "/servers", b)
-    fmt.Fprintf(os.Stderr, "Log: ERROR :%s \n", err.Error())
+    req, err := c.newRequest("GET", c.joinUrl("servers"), b)
     if err != nil {
-        return err
+        return nil, err
     }
     resp, err := c.h.Do(req)
     if err != nil {
-        return err
+        return nil, err
     }
     if resp.Body != nil {
-        buf := new(bytes.Buffer)
-        buf.ReadFrom(resp.Body)
-        logger(buf.String(), nil)
         defer resp.Body.Close()
     }
     switch resp.StatusCode {
     	case http.StatusOK:
-    		return nil
+    		break
     	default:
-    		return ErrInvalidResponse
+    		return nil, ErrInvalidResponse
     }
+    var s *[]response.ServerResource
+    if err := json.NewDecoder(resp.Body).Decode(&s); err != nil {
+        return nil, err
+    }
+    return s, nil
 }
 
 func (c *Client) Add(uuid string, s *msg.Service) error {
@@ -92,7 +93,6 @@ func (c *Client) Add(uuid string, s *msg.Service) error {
 		return err
 	}
 	logger("Add" + c.joinUrl(uuid), b)
-	c.GetServers()
 	req, err := c.newRequest("PUT", c.joinUrl(uuid), b)
 	if err != nil {
 		return err
@@ -301,8 +301,8 @@ func (c *Client) AddCallback(uuid string, cb *msg.Callback) error {
 	}
 }
 
-func (c *Client) joinUrl(uuid string) string {
-	return fmt.Sprintf("%s/skydns/services/%s", c.base, uuid)
+func (c *Client) joinUrl(action string) string {
+	return fmt.Sprintf("%s/%s", c.base, action)
 }
 
 func (c *Client) newRequest(method, url string, body io.Reader) (*http.Request, error) {
