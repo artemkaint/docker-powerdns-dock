@@ -61,6 +61,7 @@ func NewClient(base, secret, domain, basedns string) (*Client, error) {
 	}, nil
 }
 
+// GET /servers
 func (c *Client) GetServers() (*[]response.ServerResource, error) {
     b := bytes.NewBuffer(nil)
     req, err := c.newRequest("GET", c.joinUrl("servers"), b)
@@ -87,6 +88,7 @@ func (c *Client) GetServers() (*[]response.ServerResource, error) {
     return s, nil
 }
 
+// GET /servers/:server_id
 func (c *Client) GetServer(uuid string) (*response.ServerResource, error) {
     b := bytes.NewBuffer(nil)
     req, err := c.newRequest("GET", c.joinUrl(fmt.Sprintf("servers/%s", uuid)), b)
@@ -111,6 +113,18 @@ func (c *Client) GetServer(uuid string) (*response.ServerResource, error) {
         return nil, err
     }
     return s, nil
+}
+
+// GET /servers/:server_id/config
+func (c *Client) GetServerConfigs() error {
+    // TODO: need implement
+    return nil
+}
+
+// GET /servers/:server_id/config/:config_setting_name
+func (c *Client) GetServerConfig(uuid string) error {
+    // TODO: need implement
+    return nil
 }
 
 func (c *Client) Add(uuid string, s *msg.Service) error {
