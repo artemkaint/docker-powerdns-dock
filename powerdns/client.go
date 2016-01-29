@@ -87,6 +87,32 @@ func (c *Client) GetServers() (*[]response.ServerResource, error) {
     return s, nil
 }
 
+func (c *Client) GetServer(uuid string) (*response.ServerResource, error) {
+    b := bytes.NewBuffer(nil)
+    req, err := c.newRequest("GET", c.joinUrl(fmt.Sprintf("servers/%s", uuid)), b)
+    if err != nil {
+        return nil, err
+    }
+    resp, err := c.h.Do(req)
+    if err != nil {
+        return nil, err
+    }
+    if resp.Body != nil {
+        defer resp.Body.Close()
+    }
+    switch resp.StatusCode {
+    	case http.StatusOK:
+    		break
+    	default:
+    		return nil, ErrInvalidResponse
+    }
+    var s *response.ServerResource
+    if err := json.NewDecoder(resp.Body).Decode(&s); err != nil {
+        return nil, err
+    }
+    return s, nil
+}
+
 func (c *Client) Add(uuid string, s *msg.Service) error {
 	b := bytes.NewBuffer(nil)
 	if err := json.NewEncoder(b).Encode(s); err != nil {
