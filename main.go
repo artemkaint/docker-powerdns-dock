@@ -23,32 +23,32 @@ var (
 	pathToSocket        string
 	domain              string
 	environment         string
-	skydnsUrl           string
-	skydnsContainerName string
+	powerdnsUrl           string
+	powerdnsContainerName string
 	secret              string
 	ttl                 int
 	beat                int
 	numberOfHandlers    int
 	pluginFile          string
 
-	skydns       Skydns
-	dockerClient docker.Docker
-	plugins      *pluginRuntime
+	powerdns        PowerDNS
+	dockerClient    docker.Docker
+	plugins         *pluginRuntime
 	running      = make(map[string]struct{})
 	runningLock  = sync.Mutex{}
 )
 
 func init() {
 	flag.StringVar(&pathToSocket, "s", "/var/run/docker.sock", "path to the docker unix socket")
-	flag.StringVar(&skydnsUrl, "skydns", "", "url to the skydns url")
-	flag.StringVar(&skydnsContainerName, "name", "", "name of skydns container")
-	flag.StringVar(&secret, "secret", "", "skydns secret")
-	flag.StringVar(&domain, "domain", "", "same domain passed to skydns")
+	flag.StringVar(&powerdnsUrl, "powerdns", "", "url to the powerdns url")
+	flag.StringVar(&powerdnsContainerName, "name", "", "name of powerdns container")
+	flag.StringVar(&secret, "secret", "", "powerdns secret")
+	flag.StringVar(&domain, "domain", "", "same domain passed to powerdns")
 	flag.StringVar(&environment, "environment", "dev", "environment name where service is running")
 	flag.IntVar(&ttl, "ttl", 60, "default ttl to use when registering a service")
 	flag.IntVar(&beat, "beat", 0, "heartbeat interval")
 	flag.IntVar(&numberOfHandlers, "workers", 3, "number of concurrent workers")
-	flag.StringVar(&pluginFile, "plugins", "/go/src/github.com/artemkaint/docker-powerdns-dock/plugins/default.js", "file containing javascript plugins (plugins.js)")
+	flag.StringVar(&pluginFile, "plugins", "/go/src/github.com/artemkaint/docker-powerdns-dock/plugins/containerEnv.js", "file containing javascript plugins (plugins.js)")
 
 	flag.Parse()
 }
@@ -58,16 +58,16 @@ func validateSettings() {
 		beat = ttl - (ttl / 4)
 	}
 
-	if (skydnsUrl != "") && (skydnsContainerName != "") {
-		fatal(fmt.Errorf("specify 'name' or 'skydns', not both"))
+	if (powerdnsUrl != "") && (powerdnsContainerName != "") {
+		fatal(fmt.Errorf("specify 'name' or 'powerdns', not both"))
 	}
 
-	if (skydnsUrl == "") && (skydnsContainerName == "") {
-		skydnsUrl = "http://" + os.Getenv("SKYDNS_PORT_8080_TCP_ADDR") + ":8081"
+	if (powerdnsUrl == "") && (powerdnsContainerName == "") {
+		powerdnsUrl = "http://" + os.Getenv("POWERDNS_PORT_8080_TCP_ADDR") + ":8081"
 	}
 
 	if domain == "" {
-		fatal(fmt.Errorf("Must specify your skydns domain"))
+		fatal(fmt.Errorf("Must specify your powerdns domain"))
 	}
 }
 
@@ -137,7 +137,7 @@ func heartbeat(uuid string) {
 }
 
 // restoreContainers loads all running containers and inserts
-// them into skydns when skydock starts
+// them into powerdns when skydock starts
 func restoreContainers() error {
 	containers, err := dockerClient.FetchAllContainers()
 	if err != nil {
@@ -161,16 +161,16 @@ func restoreContainers() error {
 			fatal(err)
 		}
 		if err := sendService(uuid, service); err != nil {
-			//log.Logf(log.ERROR, "failed to send %s to skydns on restore: %s", uuid, err)
+			//log.Logf(log.ERROR, "failed to send %s to powerdns on restore: %s", uuid, err)
 		}
 	}
 	return nil
 }
 
-// sendService sends the uuid and service data to skydns
+// sendService sends the uuid and service data to powerdns
 func sendService(uuid string, service *msg.Service) error {
-	//log.Logf(log.INFO, "adding %s (%s) to skydns", uuid, service.Name)
-	if err := skydns.Add(uuid, service); err != nil {
+	//log.Logf(log.INFO, "adding %s (%s) to powerdns", uuid, service.Name)
+	if err := powerdns.Add(uuid, service); err != nil {
 		// ignore erros for conflicting uuids and start the heartbeat again
 		if err != client.ErrConflictingUUID {
 			return err
@@ -183,8 +183,8 @@ func sendService(uuid string, service *msg.Service) error {
 }
 
 func removeService(uuid string) error {
-	//log.Logf(log.INFO, "removing %s from skydns", uuid)
-	return skydns.Delete(uuid)
+	//log.Logf(log.INFO, "removing %s from powerdns", uuid)
+	return powerdns.Delete(uuid)
 }
 
 func addService(uuid, image string) error {
@@ -210,7 +210,7 @@ func addService(uuid, image string) error {
 }
 
 func updateService(uuid string, ttl int) error {
-	return skydns.Update(uuid, uint32(ttl))
+	return powerdns.Update(uuid, uint32(ttl))
 }
 
 func eventHandler(c chan *docker.Event, group *sync.WaitGroup) {
@@ -223,11 +223,11 @@ func eventHandler(c chan *docker.Event, group *sync.WaitGroup) {
 		switch event.Status {
 		case "die", "stop", "kill":
 			if err := removeService(uuid); err != nil {
-				//log.Logf(log.ERROR, "error removing %s from skydns: %s", uuid, err)
+				//log.Logf(log.ERROR, "error removing %s from powerdns: %s", uuid, err)
 			}
 		case "start", "restart":
 			if err := addService(uuid, event.Image); err != nil {
-				//log.Logf(log.ERROR, "error adding %s to skydns: %s", uuid, err)
+				//log.Logf(log.ERROR, "error adding %s to powerdns: %s", uuid, err)
 			}
 		}
 	}
@@ -260,20 +260,20 @@ func main() {
 		fatal(err)
 	}
 
-	if skydnsContainerName != "" {
-		container, err := dockerClient.FetchContainer(skydnsContainerName, "")
+	if powerdnsContainerName != "" {
+		container, err := dockerClient.FetchContainer(powerdnsContainerName, "")
 		if err != nil {
-			//log.Logf(log.FATAL, "error retrieving skydns container '%s': %s", skydnsContainerName, err)
+			//log.Logf(log.FATAL, "error retrieving powerdns container '%s': %s", powerdnsContainerName, err)
 			fatal(err)
 		}
 
-		skydnsUrl = "http://" + container.NetworkSettings.IpAddress + ":8081"
+		powerdnsUrl = "http://" + container.NetworkSettings.IpAddress + ":8081"
 	}
 
-	//log.Logf(log.INFO, "skydns URL: %s", skydnsUrl)
+	//log.Logf(log.INFO, "powerdns URL: %s", powerdnsUrl)
 
-	if skydns, err = client.NewClient(skydnsUrl, secret, domain, "172.17.0.8:53"); err != nil {
-		//log.Logf(log.FATAL, "error connecting to skydns: %s", err)
+	if powerdns, err = client.NewClient(powerdnsUrl, secret, domain, "172.17.0.8:53"); err != nil {
+		//log.Logf(log.FATAL, "error connecting to powerdns: %s", err)
 		fatal(err)
 	}
 

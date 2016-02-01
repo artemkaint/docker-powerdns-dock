@@ -212,42 +212,11 @@ func (c *Client) Add(uuid string, s *msg.Service) error {
 	if err := json.NewEncoder(b).Encode(s); err != nil {
 		return err
 	}
-	res, err := c.AddZone("localhost", nil)
-    if err != nil {
-        fmt.Fprintf(os.Stderr, "Log: ERROR: %s \n", err.Error())
-    }
-    if res != nil {
-        fmt.Fprintf(os.Stderr, "Log: RESULT: %s \n", res)
-    }
-	os.Exit(0)
-	logger("Add" + c.joinUrl(uuid), b)
-	req, err := c.newRequest("PUT", c.joinUrl(uuid), b)
-	if err != nil {
-		return err
+	_, error := c.AddZone(s.Version, nil)
+	if error != nil {
+        fmt.Fprintf(os.Stderr, "Log: ERROR: %s \n", error.Error())
 	}
-	resp, err := c.h.Do(req)
-	if err != nil {
-		return err
-	}
-	if resp.Body != nil {
-		defer resp.Body.Close()
-	}
-
-	switch resp.StatusCode {
-	case http.StatusCreated:
-		return nil
-	case http.StatusConflict:
-		return ErrConflictingUUID
-	case http.StatusMovedPermanently:
-		base, err := c.extractBaseFromLocation(resp.Header.Get("Location"))
-		if err != nil {
-			return err
-		}
-		c.base = base
-		return c.Add(uuid, s)
-	default:
-		return ErrInvalidResponse
-	}
+	return error
 }
 
 func (c *Client) Delete(uuid string) error {
