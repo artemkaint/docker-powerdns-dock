@@ -155,21 +155,21 @@ func (c *Client) GetZones() (*[]response.ZoneCollection, error) {
 }
 
 // POST /servers/:server_id/zones
-func (c *Client) AddZone() (*response.ZoneCollection, error) {
+func (c *Client) AddZone(zone string, server interface{}) (*response.ZoneCollection, error) {
+    if server == nil {
+        server = "localhost"
+    }
     jsonZone, err := json.Marshal(response.ZoneCollection{
-        Name: "example.6g666",
+        Name: zone,
         Kind: "Native",
         Masters: []string{},
-        Nameservers: []string{
-            "ns1.example.org",
-            "ns2.example.org",
-        },
+        Nameservers: []string{},
     })
     if err != nil {
         return nil, err
     }
     b := bytes.NewBuffer([]byte(jsonZone))
-    req, err := c.newRequest("POST", c.joinUrl(fmt.Sprintf("servers/%s/zones", "localhost")), b)
+    req, err := c.newRequest("POST", c.joinUrl(fmt.Sprintf("servers/%s/zones", server)), b)
     if err != nil {
         return nil, err
     }
@@ -212,7 +212,7 @@ func (c *Client) Add(uuid string, s *msg.Service) error {
 	if err := json.NewEncoder(b).Encode(s); err != nil {
 		return err
 	}
-	res, err := c.AddZone()
+	res, err := c.AddZone("localhost", nil)
     if err != nil {
         fmt.Fprintf(os.Stderr, "Log: ERROR: %s \n", err.Error())
     }
