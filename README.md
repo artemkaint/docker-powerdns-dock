@@ -32,26 +32,13 @@ docker run -d --name pdns-recursor antage/pdns-recursor
 docker pull artemkaint/powerdns:3.4
 ```
 
-* Create PowerDNS databases
-```
-docker run --rm \
-       --link pdns-postgres \
-       --entrypoint=/bin/bash \
-       -e PGPASSWORD=SOMEPASSWORD \
-       artemkaint/powerdns:3.4 \
-       -c 'psql -h pdns-postgres \
-                -p 5432 \
-                -d SOMEUSER \
-                -U SOMEUSER \
-                -f /usr/share/doc/pdns-backend-pgsql/schema.pgsql.sql'
-```
 
 * Run PowerDNS instance
 ```
 docker run -d --name powerdns \
        --link pdns-postgres \
        --link pdns-recursor \
-       artemkaint/powerdns:3.4 \
+       artemkaint/powerdns-docker-dock \
        --no-config \
        --launch=gpgsql \
        --gpgsql-host=pdns-postgres \
