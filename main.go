@@ -12,7 +12,7 @@ import (
 	"github.com/artemkaint/docker-powerdns-dock/docker"
 	"github.com/artemkaint/docker-powerdns-dock/utils"
 	//influxdb "github.com/influxdb/influxdb/client"
-	"github.com/artemkaint/docker-powerdns-dock/powerdns"
+	"github.com/artemkaint/go-powerdns-client"
 	"github.com/skynetservices/skydns1/msg"
 	"os"
 	"sync"
@@ -170,7 +170,8 @@ func restoreContainers() error {
 // sendService sends the uuid and service data to powerdns
 func sendService(uuid string, service *msg.Service) error {
 	//log.Logf(log.INFO, "adding %s (%s) to powerdns", uuid, service.Name)
-	if err := powerdns.Add(uuid, service); err != nil {
+	if res, err := powerdns.AddZone(service.Name, "localhost"); err != nil {
+	    fmt.Fprintf(os.Stderr, "Log: res: %s \n", res)
 		// ignore erros for conflicting uuids and start the heartbeat again
 		if err != client.ErrConflictingUUID {
 			return err
