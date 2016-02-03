@@ -17,6 +17,7 @@ import (
 	"os"
 	"sync"
 	"time"
+	"errors"
 )
 
 var (
@@ -277,6 +278,13 @@ func main() {
 		//log.Logf(log.FATAL, "error connecting to powerdns: %s", err)
 		fatal(err)
 	}
+	if res, err := powerdns.GetServers(); err != nil {
+        fmt.Fprintf(os.Stderr, "Log: res: %s \n", res)
+        fatal(err)
+    }
+    if res {
+        fatal(errors.New("Empty DNS config servers"))
+    }
 
 	//log.Logf(log.DEBUG, "starting restore of containers")
 	if err := restoreContainers(); err != nil {
