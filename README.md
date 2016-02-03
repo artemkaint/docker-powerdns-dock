@@ -24,14 +24,7 @@ docker run -d --name pdns-postgres \
 docker run -d --name pdns-recursor antage/pdns-recursor
 ```
 
-### Install PowerDNS ( >= 3.4.x) connected with recursor
-
-
-* PowerDNS ver. 3.4 with HTTP-API support
-```
-docker pull artemkaint/powerdns:3.4
-```
-
+### Install PowerDNS ( >= 3.4.x) connected with recursor and autocreating databases
 
 * Run PowerDNS instance
 ```
