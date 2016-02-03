@@ -50,9 +50,7 @@ docker run -d --name powerdns \
        --recursor=$(docker inspect -f "{{ .NetworkSettings.IPAddress }}" pdns-recursor)
 ```
 
-
-
 #### License - MIT
 
 Using some code from https://github.com/crosbymichael/skydock
-Thank Michael Crosby. michael@crosbymichael.com
+Thanks to Michael Crosby. michael@crosbymichael.com
