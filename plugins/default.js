@@ -1,3 +1,5 @@
+// Copyright (c) 2014 Michael Crosby. michael@crosbymichael.com
+
 function createService(container) {
     var port = getDefaultPort(container);
     return {

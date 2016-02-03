@@ -1,3 +1,5 @@
+// Copyright (c) 2014 Michael Crosby. michael@crosbymichael.com
+
 package utils
 
 import (

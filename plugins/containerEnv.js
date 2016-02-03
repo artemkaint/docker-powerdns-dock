@@ -1,4 +1,4 @@
-
+// Copyright (c) 2014 Michael Crosby. michael@crosbymichael.com
 
 // this plugin inspects a containers environment vars 
 // to get service information
