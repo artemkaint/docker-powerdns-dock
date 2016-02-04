@@ -18,19 +18,21 @@ import (
 	"sync"
 	"time"
 	"errors"
+	"strconv"
 )
 
 var (
-	pathToSocket        string
-	domain              string
-	environment         string
-	powerdnsUrl           string
-	powerdnsContainerName string
-	secret              string
-	ttl                 int
-	beat                int
-	numberOfHandlers    int
-	pluginFile          string
+	pathToSocket            string
+	domain                  string
+	environment             string
+	powerdnsUrl             string
+	powerdnsContainerName   string
+	powerdnsApiPort         int
+	secret                  string
+	ttl                     int
+	beat                    int
+	numberOfHandlers        int
+	pluginFile              string
 
 	powerdns        PowerDNS
 	dockerClient    docker.Docker
@@ -43,6 +45,7 @@ func init() {
 	flag.StringVar(&pathToSocket, "s", "/var/run/docker.sock", "path to the docker unix socket")
 	flag.StringVar(&powerdnsUrl, "powerdns", "", "url to the powerdns url")
 	flag.StringVar(&powerdnsContainerName, "name", "", "name of powerdns container")
+    flag.IntVar(&powerdnsApiPort, "apiport", 8081, "powerdns api port")
 	flag.StringVar(&secret, "secret", "", "powerdns secret")
 	flag.StringVar(&domain, "domain", "", "same domain passed to powerdns")
 	flag.StringVar(&environment, "environment", "dev", "environment name where service is running")
@@ -269,22 +272,24 @@ func main() {
 			fatal(err)
 		}
 
-		powerdnsUrl = "http://" + container.NetworkSettings.IpAddress + ":8081"
+		powerdnsUrl = "http://" + container.NetworkSettings.IpAddress + ":" + strconv.Itoa(powerdnsApiPort)
 	}
 
 	//log.Logf(log.INFO, "powerdns URL: %s", powerdnsUrl)
 
-	if powerdns, err = client.NewClient(powerdnsUrl, secret, domain, "172.17.0.8:53"); err != nil {
+	if powerdns, err = client.NewClient(powerdnsUrl, secret, domain, "172.17.42.1:53"); err != nil {
 		//log.Logf(log.FATAL, "error connecting to powerdns: %s", err)
 		fatal(err)
 	}
+	res, err := powerdns.GetServers()
 	if res, err := powerdns.GetServers(); err != nil {
-        fmt.Fprintf(os.Stderr, "Log: res: %s \n", res)
-        fatal(err)
-    }
-    if res {
-        fatal(errors.New("Empty DNS config servers"))
-    }
+		fmt.Fprintf(os.Stderr, "Log: res: %s \n", res)
+		fatal(err)
+	}
+
+    	if len(res) < 1 {
+        	fatal(errors.New("Empty DNS config servers"))
+    	}
 
 	//log.Logf(log.DEBUG, "starting restore of containers")
 	if err := restoreContainers(); err != nil {
